@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLB NTDT | Quản Lý Tiện Ích</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cấu hình Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-blue': '#1D4ED8',
+                        'light-blue': '#E0F2FE',
+                        'dark-purple': '#3730A3',
+                        'admin-red': '#DC2626',
+                        'admin-green': '#059669',
+                        'club-info': '#059669',
+                        'member-blue': '#1D4ED8',
+                        'schedule-color': '#F59E0B',
+                        'confirm-yellow': '#FBBF24',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+       
+        /* Sidebar transition */
+        .sidebar {
+            width: 256px;
+            min-width: 256px;
+            display: flex;
+            background-color: #F8FAFC;
+            transition: transform 0.3s ease-in-out;
+        }
+
+
+        /* Desktop settings */
+        @media (min-width: 768px) {
+            .sidebar {
+                position: static !important;
+                transform: translateX(0) !important;
+                flex-shrink: 0;
+            }
+        }
+       
+        .card-shadow {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .card-shadow:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+        }
+       
+        .event-banner {
+            background-size: cover;
+            background-position: center;
+            min-height: 250px;
+        }
+        @media (max-width: 640px) {
+            .event-banner {
+                min-height: 180px; /* Nhỏ hơn trên mobile */
+                padding: 1.5rem;
+            }
+        }
+       
+        .modal-overlay {
+            z-index: 1000;
+        }
+
+
+        .gallery-item {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .gallery-item:hover {
+            transform: scale(1.05);
+        }
+       
+        /* Calendar Styling Optimized for Mobile */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background-color: #E5E7EB;
+        }
+        .calendar-header {
+            text-align: center;
+            font-weight: 600;
+            padding: 8px 0;
+            background-color: #DBEAFE;
+            color: #1D4ED8;
+            font-size: 0.8rem; /* Font nhỏ hơn trên mobile */
+        }
+        .calendar-day {
+            background-color: #FFFFFF;
+            min-height: 80px; /* Thấp hơn trên mobile */
+            padding: 2px;
+            cursor: pointer;
+            transition: background-color 0.1s;
+            border-radius: 4px;
+            font-size: 0.75rem; /* Font nhỏ */
+        }
+       
+        /* Desktop Calendar Override */
+        @media (min-width: 768px) {
+            .calendar-header { font-size: 1rem; }
+            .calendar-day { min-height: 100px; padding: 4px; font-size: 0.9rem; }
+        }
+
+
+        .calendar-day:not(.current-month) {
+             background-color: #F9FAFB;
+             color: #9CA3AF;
+        }
+        .calendar-day:hover:not(.has-event) {
+            background-color: #FEF3C7;
+        }
+        .has-event {
+            border-left: 3px solid #F59E0B;
+            font-weight: 600;
+        }
+        .has-event:hover {
+             background-color: #FCD34D;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans flex min-h-screen md:h-screen overflow-hidden">
+
+
+    <!-- MOBILE OVERLAY (MỚI: Để che nền khi mở menu) -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden transition-opacity opacity-0 md:hidden" onclick="window.toggleSidebar()"></div>
+
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar flex-col bg-white shadow-xl h-full border-r border-gray-100 p-4 pt-6 fixed inset-y-0 left-0 transform -translate-x-full md:translate-x-0 z-50">
+       
+        <!-- Logo -->
+        <div class="mb-8 flex items-center space-x-2 p-2 border-b border-gray-200 pb-4">
+            <svg class="w-8 h-8 text-primary-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <span class="text-2xl font-extrabold text-primary-blue">NTDT</span>
+        </div>
+
+
+        <!-- Navigation Links -->
+        <nav class="space-y-1">
+            <button onclick="window.switchView('dashboard')" class="w-full text-left flex items-center space-x-3 p-3 rounded-xl bg-light-blue text-primary-blue font-bold shadow-md" id="nav-dashboard">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                <span>Trang Chủ</span>
+            </button>
+        </nav>
+       
+        <h3 class="text-xs font-bold uppercase text-gray-400 mt-8 mb-2 px-3">Hoạt động Số</h3>
+        <nav class="space-y-1">
+            <button onclick="window.switchView('schedule-view')" class="w-full text-left flex items-center space-x-3 p-3 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-primary-blue transition duration-150">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Lịch Sự kiện</span>
+            </button>
+
+
+            <button onclick="window.switchView('member-list')" class="w-full text-left flex items-center space-x-3 p-3 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-primary-blue transition duration-150">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-9 0V4a2 2 0 012-2h4a2 2 0 012 2v2m-3 7h3m-3 4h3"></path></svg>
+                <span>Thành Viên CLB</span>
+            </button>
+           
+            <a href="#contact" class="flex items-center space-x-3 p-3 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-primary-blue transition duration-150" onclick="window.toggleSidebar()">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <span>Liên Hệ</span>
+            </a>
+           
+            <a href="https://www.facebook.com/profile.php?id=61584332597503" target="_blank" class="flex items-center space-x-3 p-3 mt-4 rounded-xl bg-primary-blue text-white font-semibold shadow-md hover:bg-blue-700 transition duration-150">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.04c-5.5 0-9.96 4.46-9.96 9.96s4.46 9.96 9.96 9.96 9.96-4.46 9.96-9.96S17.5 2.04 12 2.04zm.64 15.01V12.9h2.24l.34-2.7h-2.58v-1.74c0-.78.22-1.31 1.33-1.31h1.42V6.16c-.25-.03-1.11-.11-2.11-.11-2.09 0-3.53 1.28-3.53 3.65v2.09H8.22v2.7h2.57v4.15h2.41z"/></svg>
+                <span>Fanpage Facebook</span>
+            </a>
+        </nav>
+       
+        <div id="admin-mode-indicator" class="mt-8 p-3 rounded-lg bg-admin-red text-white text-sm font-semibold text-center hidden shadow-lg">
+            <p>CHẾ ĐỘ ADMIN</p>
+        </div>
+
+
+        <div class="mt-auto pt-4 border-t border-gray-100">
+             <button id="auth-button" class="w-full text-sm p-2 rounded-lg text-primary-blue hover:text-blue-700 hover:bg-light-blue font-medium flex items-center justify-center space-x-2">
+                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                 <span id="auth-status">Đăng nhập Admin</span>
+             </button>
+        </div>
+    </aside>
+
+
+    <!-- Main Content Area -->
+    <div class="flex-1 overflow-y-auto p-4 md:p-8 relative">
+       
+        <!-- Toggle Button (Mobile) -->
+        <button id="sidebar-toggle-btn" class="md:hidden p-3 rounded-xl bg-white shadow-md text-primary-blue fixed top-4 left-4 z-40 transition-opacity">
+            <svg id="menu-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <svg id="close-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+
+
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="pt-12 md:pt-0"> <!-- Thêm padding top mobile để tránh nút menu -->
+           
+            <section class="mb-10 max-w-4xl mx-auto md:mx-0">
+                <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Xin Chào, CLB NTDT!</h1>
+                <p class="text-gray-500 text-lg">Đây là nơi tập trung các liên kết và tài nguyên quan trọng.</p>
+            </section>
+
+
+            <!-- Admin Forms (Initially Hidden) -->
+            <section id="admin-signup-link-form-container" class="hidden mb-12 max-w-4xl mx-auto md:mx-0 bg-white p-6 rounded-xl card-shadow border border-yellow-500">
+                <h2 class="text-2xl font-bold text-schedule-color mb-4">Quản lý Link Đăng ký CLB</h2>
+                <form id="manage-signup-link-form" class="space-y-4">
+                    <input type="url" id="club-signup-link" placeholder="URL Link đăng ký CLB" required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-schedule-color focus:border-schedule-color">
+                    <div class="pt-2 flex justify-end">
+                        <button type="submit" class="px-6 py-3 bg-schedule-color text-white font-semibold rounded-lg hover:bg-yellow-600 transition duration-150">Cập nhật</button>
+                    </div>
+                </form>
+                <p id="signup-link-admin-message" class="text-sm text-schedule-color mt-2 hidden"></p>
+            </section>
+
+
+            <section id="admin-event-form-container" class="hidden mb-12 max-w-4xl mx-auto md:mx-0 bg-white p-6 rounded-xl card-shadow border border-admin-green">
+                <h2 class="text-2xl font-bold text-admin-green mb-4">Quản lý Sự kiện Nổi bật</h2>
+                <form id="manage-event-form" class="space-y-4">
+                    <input type="hidden" id="event-doc-id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="event-name" placeholder="Tên Sự kiện" required class="p-3 border border-gray-300 rounded-lg">
+                        <input type="text" id="event-time" placeholder="Thời gian" required class="p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    <input type="url" id="event-link" placeholder="Link đăng ký" required class="w-full p-3 border border-gray-300 rounded-lg">
+                    <input type="url" id="event-image-url" placeholder="URL Banner" class="w-full p-3 border border-gray-300 rounded-lg">
+                    <div class="pt-4 flex justify-end">
+                        <button type="submit" class="px-6 py-3 bg-admin-green text-white font-semibold rounded-lg hover:bg-green-700">Cập nhật</button>
+                    </div>
+                </form>
+                <p id="event-admin-message" class="text-sm text-admin-green mt-2 hidden"></p>
+            </section>
+
+
+            <section id="admin-add-form" class="hidden mb-12 max-w-4xl mx-auto md:mx-0 bg-white p-6 rounded-xl card-shadow border border-admin-red">
+                <h2 class="text-2xl font-bold text-admin-red mb-4">Quản lý Tiện ích</h2>
+                <form id="add-utility-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input type="text" id="utility-name" placeholder="Tên Tiện ích" required class="col-span-1 p-3 border border-gray-300 rounded-lg">
+                        <input type="url" id="utility-url" placeholder="URL Liên kết" required class="col-span-2 p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-6 py-3 bg-admin-red text-white font-semibold rounded-lg hover:bg-red-700">Thêm Mới</button>
+                    </div>
+                </form>
+                <p id="admin-message" class="text-sm text-admin-red mt-2 hidden"></p>
+            </section>
+
+
+            <!-- Main Dashboard Grid -->
+            <section id="fixed-utilities" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto md:mx-0">
+                <!-- Tiện ích Trường học -->
+                <div class="bg-white p-6 rounded-xl card-shadow border border-primary-blue/30 hover:border-primary-blue flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center space-x-3 mb-4">
+                            <svg class="w-7 h-7 text-primary-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10m0 0h16M4 17h16m-4-4l-4 4-4-4m8 0V7"></path></svg>
+                            <h2 class="text-xl font-semibold text-gray-800">Tiện ích Trường học</h2>
+                        </div>
+                        <p class="text-gray-500 mb-4">Truy cập nhanh các tài nguyên thiết yếu.</p>
+                    </div>
+                    <div id="utilities-container" class="space-y-2">
+                        <p class="text-gray-500 italic text-sm" id="loading-message">Đang tải...</p>
+                    </div>
+                </div>
+
+
+                <!-- Cấu trúc CLB -->
+                <div onclick="window.switchView('ban-list')" class="bg-white p-6 rounded-xl card-shadow border border-club-info/30 hover:border-club-info cursor-pointer h-full flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center space-x-3 mb-4">
+                            <svg class="w-7 h-7 text-club-info" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            <h2 class="text-xl font-semibold text-gray-800">Cấu trúc & Hoạt động</h2>
+                        </div>
+                        <p class="text-gray-500">Xem cấu trúc và thư viện ảnh các Ban.</p>
+                    </div>
+                    <span class="text-sm font-medium text-club-info mt-4 inline-block">Xem chi tiết &rarr;</span>
+                </div>
+
+
+                <!-- Đăng ký -->
+                <a id="signup-link-card" href="#" target="_blank" class="block">
+                    <div class="bg-white p-6 rounded-xl card-shadow border border-schedule-color/30 hover:border-schedule-color cursor-pointer h-full flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center space-x-3 mb-4">
+                                <svg class="w-7 h-7 text-schedule-color" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                                <h2 class="text-xl font-semibold text-gray-800">Tuyển Cộng tác viên</h2>
+                            </div>
+                            <p class="text-gray-500">Mở đơn đăng ký thành viên mới.</p>
+                        </div>
+                        <span id="signup-link-text" class="text-sm font-medium text-schedule-color mt-4 inline-block">Đang tải Link &rarr;</span>
+                    </div>
+                </a>
+            </section>
+
+
+            <!-- Event Banner -->
+            <section id="event-banner-section" class="event-banner bg-dark-purple p-8 rounded-xl card-shadow flex flex-col items-center justify-center text-center gap-4 mb-12 max-w-4xl mx-auto md:mx-0">
+                <div id="event-content">
+                    <h2 class="text-4xl font-extrabold text-white mb-2">Đang tải sự kiện...</h2>
+                </div>
+            </section>
+        </div>
+
+
+
+
+        <!-- CLUB INFO VIEW -->
+        <div id="view-club-info" class="hidden pt-12 md:pt-0">
+            <!-- List of Bans -->
+            <section id="club-info-ban-list">
+                <div class="flex items-center mb-6">
+                    <button onclick="window.switchView('dashboard')" class="text-gray-500 hover:text-primary-blue mr-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    </button>
+                    <h1 class="text-3xl font-extrabold text-gray-900">Các Ban thuộc Câu lạc bộ</h1>
+                </div>
+
+
+                <div id="admin-add-ban-form" class="hidden mb-8 max-w-4xl mx-auto md:mx-0 bg-white p-6 rounded-xl shadow-md border border-club-info">
+                    <h2 class="text-xl font-bold text-club-info mb-4">Thêm Ban Mới</h2>
+                    <form id="add-ban-form" class="space-y-4">
+                        <input type="text" id="ban-name" placeholder="Tên Ban" required class="w-full p-3 border border-gray-300 rounded-lg">
+                        <textarea id="ban-description" placeholder="Mô tả" rows="2" class="w-full p-3 border border-gray-300 rounded-lg"></textarea>
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-6 py-3 bg-club-info text-white font-semibold rounded-lg">Thêm Ban</button>
+                        </div>
+                    </form>
+                    <p id="ban-admin-message" class="text-sm text-club-info mt-2 hidden"></p>
+                </div>
+                <div id="bans-list-container" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+            </section>
+
+
+            <!-- Ban Gallery -->
+            <section id="club-info-content-gallery" class="hidden">
+                <div class="flex items-center mb-6">
+                    <button onclick="window.switchView('ban-list')" class="text-gray-500 hover:text-primary-blue mr-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    </button>
+                    <h1 class="text-3xl font-extrabold text-gray-900" id="current-ban-name">Thư viện Ban</h1>
+                </div>
+
+
+                <div id="admin-upload-content-form" class="hidden mb-8 max-w-4xl mx-auto md:mx-0 bg-white p-6 rounded-xl shadow-md border border-club-info">
+                    <h2 class="text-xl font-bold text-club-info mb-4">Đăng tải Nội dung Mới</h2>
+                    <form id="upload-content-form" class="space-y-4">
+                        <input type="url" id="content-image-url" placeholder="URL Ảnh/Video" required class="w-full p-3 border border-gray-300 rounded-lg">
+                        <textarea id="content-caption" placeholder="Mô tả" rows="2" class="w-full p-3 border border-gray-300 rounded-lg"></textarea>
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-6 py-3 bg-club-info text-white font-semibold rounded-lg">Đăng tải</button>
+                        </div>
+                    </form>
+                    <p id="content-admin-message" class="text-sm text-club-info mt-2 hidden"></p>
+                </div>
+                <div id="content-gallery-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+            </section>
+        </div>
+       
+        <!-- MEMBERS VIEW -->
+        <div id="view-members-info" class="hidden pt-12 md:pt-0">
+            <section id="club-members-list">
+                <div class="flex items-center mb-6">
+                    <button onclick="window.switchView('dashboard')" class="text-gray-500 hover:text-primary-blue mr-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    </button>
+                    <h1 class="text-3xl font-extrabold text-gray-900">Danh sách Thành viên</h1>
+                </div>
+
+
+                <div id="admin-add-member-form" class="hidden mb-8 max-w-4xl mx-auto md:mx-0 bg-white p-6 rounded-xl shadow-md border border-member-blue">
+                    <h2 class="text-xl font-bold text-member-blue mb-4">Thêm Thành viên Mới</h2>
+                    <form id="add-member-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <input type="text" id="member-name" placeholder="Tên" required class="col-span-1 p-3 border border-gray-300 rounded-lg">
+                            <input type="text" id="member-role" placeholder="Chức vụ" required class="col-span-1 p-3 border border-gray-300 rounded-lg">
+                            <input type="url" id="member-avatar-url" placeholder="URL Avatar" class="col-span-2 p-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <input type="text" id="member-contact" placeholder="Liên hệ" class="w-full p-3 border border-gray-300 rounded-lg">
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-6 py-3 bg-member-blue text-white font-semibold rounded-lg">Thêm Thành viên</button>
+                        </div>
+                    </form>
+                    <p id="member-admin-message" class="text-sm text-member-blue mt-2 hidden"></p>
+                </div>
+                <div id="members-list-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </section>
+        </div>
+       
+        <!-- SCHEDULE VIEW -->
+        <div id="view-schedule-info" class="hidden pt-12 md:pt-0">
+            <section id="club-schedule-list">
+                <div class="flex items-center mb-6">
+                    <button onclick="window.switchView('dashboard')" class="text-gray-500 hover:text-primary-blue mr-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    </button>
+                    <h1 class="text-3xl font-extrabold text-gray-900">Lịch Sự kiện</h1>
+                </div>
+
+
+                <div id="admin-quick-schedule-form" class="hidden max-w-4xl mx-auto mb-8 bg-white p-6 rounded-xl shadow-md border-schedule-color border">
+                    <h2 class="text-xl font-bold text-schedule-color mb-3">Thêm Sự kiện Nhanh</h2>
+                    <p id="quick-add-message" class="text-sm text-admin-red mb-3 hidden"></p>
+                    <div class="flex flex-col sm:flex-row gap-4 items-center">
+                        <input type="date" id="quick-date-input" class="p-2 border border-gray-300 rounded-lg w-full sm:w-auto flex-grow">
+                        <button id="quick-add-btn" class="w-full sm:w-auto px-4 py-2 bg-schedule-color text-white font-semibold rounded-lg">Mở Form</button>
+                    </div>
+                </div>
+
+
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex justify-between items-center bg-white p-4 rounded-t-xl shadow-md border-b">
+                        <button id="prev-month-btn" class="p-2 rounded-full text-gray-600 hover:bg-gray-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                        <h2 id="current-month-year" class="text-xl font-bold text-gray-800">Tháng</h2>
+                         <button id="next-month-btn" class="p-2 rounded-full text-gray-600 hover:bg-gray-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+                    </div>
+                    <div id="calendar-grid-container" class="calendar-grid border"></div>
+                </div>
+            </section>
+        </div>
+
+
+    </div>
+   
+    <!-- MODALS (UPDATED FOR MOBILE: z-50, overflow, padding) -->
+
+
+    <!-- Image Zoom Modal -->
+    <div id="zoom-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center modal-overlay hidden z-50 p-4" onclick="hideZoomModal()">
+        <div class="bg-white p-4 rounded-xl shadow-2xl max-w-4xl w-full mx-auto max-h-full overflow-y-auto" onclick="event.stopPropagation()">
+            <button onclick="hideZoomModal()" class="absolute top-2 right-2 text-white p-2 bg-black bg-opacity-50 rounded-full">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="flex flex-col md:flex-row gap-4">
+                <img id="zoom-image" src="" class="w-full md:w-3/5 h-auto rounded-lg object-contain">
+                <div class="md:w-2/5 p-2">
+                    <h3 id="zoom-caption" class="text-xl font-bold text-gray-900 mb-2"></h3>
+                    <p id="zoom-date" class="text-sm text-gray-500 mb-4"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+   
+    <!-- Schedule Modal -->
+    <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-4 overflow-y-auto" onclick="hideScheduleModal()">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md max-h-full overflow-y-auto" onclick="event.stopPropagation()">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6" id="schedule-modal-title">Thêm Sự kiện</h2>
+            <p id="schedule-selected-date" class="text-member-blue font-semibold mb-4"></p>
+           
+            <div id="schedule-admin-form-container" class="hidden">
+                <form id="add-schedule-form" class="space-y-4">
+                    <input type="hidden" id="event-doc-id-schedule">
+                    <input type="text" id="schedule-name" placeholder="Tên Sự kiện" required class="w-full p-3 border border-gray-300 rounded-lg">
+                    <textarea id="schedule-description" placeholder="Mô tả" rows="3" class="w-full p-3 border border-gray-300 rounded-lg"></textarea>
+                    <div class="pt-2 flex justify-between space-x-3">
+                         <button type="button" id="delete-schedule-btn" class="hidden px-4 py-2 bg-admin-red text-white font-semibold rounded-lg">Xóa</button>
+                        <button type="submit" id="save-schedule-btn" class="ml-auto px-4 py-2 bg-schedule-color text-white font-semibold rounded-lg">Lưu</button>
+                    </div>
+                </form>
+                <p id="schedule-admin-message" class="text-sm text-schedule-color mt-2 hidden"></p>
+            </div>
+            <div id="schedule-public-view"></div>
+        </div>
+    </div>
+
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-4 overflow-y-auto">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm max-h-full overflow-y-auto">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Đăng nhập Admin</h2>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Tên tài khoản</label>
+                    <input type="text" id="username" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block w-full text-sm font-medium text-gray-700">Mật khẩu</label>
+                    <input type="password" id="password" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg">
+                </div>
+                <div id="login-error" class="text-sm text-admin-red hidden">Sai thông tin đăng nhập.</div>
+                <div class="pt-2 flex justify-between space-x-3">
+                    <button type="button" id="close-login-modal" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg">Hủy</button>
+                    <button type="submit" class="px-4 py-2 bg-primary-blue text-white font-semibold rounded-lg">Đăng nhập</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-xs">
+            <div class="text-center mb-4">
+                <svg class="mx-auto w-10 h-10 text-confirm-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <h3 class="text-lg font-bold text-gray-800 mt-2">Xác nhận</h3>
+            </div>
+            <p id="confirm-message" class="text-sm text-gray-600 mb-6 text-center"></p>
+            <div class="flex justify-between space-x-3">
+                <button type="button" id="confirm-cancel-btn" class="flex-1 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg">Hủy</button>
+                <button type="button" id="confirm-action-btn" class="flex-1 px-4 py-2 bg-admin-red text-white font-semibold rounded-lg">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, setDoc, onSnapshot, collection, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+
+        // ====================================================================
+        // !!! CẤU HÌNH FIREBASE: HÃY THAY THẾ BẰNG THÔNG TIN DỰ ÁN CỦA BẠN !!!
+        // ====================================================================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+
+        const appId = firebaseConfig.appId || "default_app";
+        const initialAuthToken = null;
+
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+       
+        // --- ADMIN CONFIG ---
+        const ADMIN_USERNAME = "CLBCDS";
+        const ADMIN_PASSWORD = "NTDTCLUB";
+        let IS_ADMIN_LOGGED_IN = localStorage.getItem('isAdminLoggedIn') === 'true';
+       
+        // --- GLOBAL STATE ---
+        let CURRENT_VIEW = 'dashboard';
+        let CURRENT_BAN_ID = null;
+        let MEMBERS_LIST = [];
+        let SCHEDULE_EVENTS = [];
+        let SELECTED_SCHEDULE_DATE = null;
+        let CURRENT_DATE = new Date();
+        let CURRENT_MONTH = CURRENT_DATE.getMonth();
+        let CURRENT_YEAR = CURRENT_DATE.getFullYear();
+        const DAYS_OF_WEEK = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const MONTH_NAMES = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+
+
+        // --- FIREBASE UTILS ---
+        const getUtilitiesCollection = () => collection(db, `artifacts/${appId}/public/data/utilities`);
+        const getEventDoc = () => doc(db, `artifacts/${appId}/public/data/events`, 'current_featured_event');
+        const getBansCollection = () => collection(db, `artifacts/${appId}/public/data/bans`);
+        const getContentCollection = (banId) => collection(db, `artifacts/${appId}/public/data/bans/${banId}/content`);
+        const getMembersCollection = () => collection(db, `artifacts/${appId}/public/data/members`);
+        const getScheduleCollection = () => collection(db, `artifacts/${appId}/public/data/schedule`);
+        const getClubSettingsDoc = () => doc(db, `artifacts/${appId}/public/data/club_settings`, 'signup_link');
+
+
+
+
+        // --- UI UTILS ---
+        window.showZoomModal = (imageUrl, caption, date) => {
+            document.getElementById('zoom-image').src = imageUrl;
+            document.getElementById('zoom-caption').textContent = caption;
+            document.getElementById('zoom-date').textContent = date;
+            document.getElementById('zoom-modal').classList.remove('hidden');
+        };
+        window.hideZoomModal = () => document.getElementById('zoom-modal').classList.add('hidden');
+        window.hideScheduleModal = () => {
+            document.getElementById('schedule-modal').classList.add('hidden');
+            document.getElementById('add-schedule-form').reset();
+            document.getElementById('event-doc-id-schedule').value = '';
+            document.getElementById('delete-schedule-btn').classList.add('hidden');
+        };
+       
+        // --- MOBILE SIDEBAR TOGGLE LOGIC ---
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const toggleBtn = document.getElementById('sidebar-toggle-btn');
+        const menuIcon = document.getElementById('menu-icon');
+        const closeIcon = document.getElementById('close-icon');
+
+
+        window.toggleSidebar = () => {
+            const isClosed = sidebar.classList.contains('-translate-x-full');
+            if (isClosed) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                menuIcon.classList.add('hidden');
+                closeIcon.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+                menuIcon.classList.remove('hidden');
+                closeIcon.classList.add('hidden');
+            }
+        };
+
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', window.toggleSidebar);
+        }
+
+
+        // --- VIEW MANAGEMENT ---
+        const switchView = (viewName, banId = null) => {
+            CURRENT_VIEW = viewName;
+            CURRENT_BAN_ID = banId;
+           
+            // Ẩn tất cả views
+            ['view-dashboard', 'view-club-info', 'view-members-info', 'view-schedule-info'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['club-info-ban-list', 'club-info-content-gallery'].forEach(id => document.getElementById(id).classList.add('hidden'));
+
+
+            if (viewName === 'dashboard') document.getElementById('view-dashboard').classList.remove('hidden');
+            else if (viewName === 'ban-list') {
+                document.getElementById('view-club-info').classList.remove('hidden');
+                document.getElementById('club-info-ban-list').classList.remove('hidden');
+                renderBansList(BANS_LIST);
+            } else if (viewName === 'content-gallery' && banId) {
+                document.getElementById('view-club-info').classList.remove('hidden');
+                document.getElementById('club-info-content-gallery').classList.remove('hidden');
+                loadBanContent(banId);
+            } else if (viewName === 'member-list') {
+                document.getElementById('view-members-info').classList.remove('hidden');
+                renderMembersList(MEMBERS_LIST);
+            } else if (viewName === 'schedule-view') {
+                 document.getElementById('view-schedule-info').classList.remove('hidden');
+                 renderCalendar(CURRENT_YEAR, CURRENT_MONTH);
+            }
+           
+            // Tự động đóng menu trên mobile khi chuyển view
+            if (window.innerWidth < 768 && !sidebar.classList.contains('-translate-x-full')) {
+                window.toggleSidebar();
+            }
+           
+            updateUI();
+        };
+        window.switchView = switchView;
+
+
+        // --- CALENDAR LOGIC ---
+        const renderCalendar = (year, month) => {
+            document.getElementById('current-month-year').textContent = `${MONTH_NAMES[month]} ${year}`;
+            const container = document.getElementById('calendar-grid-container');
+            container.innerHTML = '';
+           
+            DAYS_OF_WEEK.forEach(day => container.innerHTML += `<div class="calendar-header">${day}</div>`);
+
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const prevMonthDays = new Date(year, month, 0).getDate();
+
+
+            for (let i = firstDay - 1; i >= 0; i--) {
+                container.innerHTML += `<div class="calendar-day">${prevMonthDays - i}</div>`;
+            }
+
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const events = SCHEDULE_EVENTS.filter(e => e.date === dateString);
+                const hasEvent = events.length > 0;
+               
+                let html = `<div class="calendar-day current-month ${hasEvent ? 'has-event' : ''}" onclick="window.showScheduleModal('${dateString}', ${JSON.stringify(events).replace(/"/g, '&quot;')})">`;
+                html += `<div class="font-bold text-gray-800">${day}</div>`;
+               
+                // Show brief event info (max 1 for mobile view optimization)
+                if (hasEvent) {
+                    html += `<div class="text-xs text-schedule-color truncate hidden md:block">${events[0].name}</div>`;
+                    if (events.length > 1) html += `<div class="text-xs text-gray-400 hidden md:block">+${events.length - 1}</div>`;
+                    // Mobile indicator
+                    html += `<div class="w-2 h-2 rounded-full bg-schedule-color md:hidden mt-1"></div>`;
+                }
+                html += `</div>`;
+                container.innerHTML += html;
+            }
+           
+             // Fill remaining cells
+            const totalCells = container.children.length - 7;
+            const remaining = 42 - totalCells;
+            for(let i=1; i<=remaining; i++) container.innerHTML += `<div class="calendar-day">${i}</div>`;
+        };
+       
+        window.showScheduleModal = (dateString, events) => {
+            SELECTED_SCHEDULE_DATE = dateString;
+            document.getElementById('schedule-selected-date').textContent = `Ngày: ${dateString}`;
+            const publicView = document.getElementById('schedule-public-view');
+           
+            if (IS_ADMIN_LOGGED_IN) {
+                document.getElementById('schedule-admin-form-container').classList.remove('hidden');
+                publicView.classList.add('hidden');
+                if (events[0]) {
+                    document.getElementById('event-doc-id-schedule').value = events[0].id;
+                    document.getElementById('schedule-name').value = events[0].name;
+                    document.getElementById('schedule-description').value = events[0].description;
+                    document.getElementById('delete-schedule-btn').classList.remove('hidden');
+                } else {
+                     document.getElementById('add-schedule-form').reset();
+                     document.getElementById('delete-schedule-btn').classList.add('hidden');
+                }
+            } else {
+                document.getElementById('schedule-admin-form-container').classList.add('hidden');
+                publicView.classList.remove('hidden');
+                publicView.innerHTML = events.length ? events.map(e => `
+                    <div class="mb-3 p-3 bg-light-blue rounded-lg border border-schedule-color">
+                        <h4 class="font-bold">${e.name}</h4>
+                        <p class="text-sm">${e.description}</p>
+                    </div>`).join('') : '<p class="italic text-gray-500">Chưa có sự kiện.</p>';
+            }
+            document.getElementById('schedule-modal').classList.remove('hidden');
+        };
+
+
+        // --- DATA RENDERING ---
+        let BANS_LIST = [];
+        const loadBanContent = (banId) => {
+            const container = document.getElementById('content-gallery-container');
+            container.innerHTML = '<p class="col-span-full text-center">Đang tải...</p>';
+            onSnapshot(query(getContentCollection(banId), orderBy('createdAt', 'desc')), (snap) => {
+                const items = []; snap.forEach(d => items.push({id:d.id, ...d.data()}));
+                renderContentGallery(banId, items);
+            });
+        };
+
+
+        const renderUtilities = (list) => {
+             const div = document.getElementById('utilities-container');
+             div.innerHTML = list.length ? list.map(u => `
+                <div class="flex justify-between items-center">
+                    <a href="${u.url}" target="_blank" class="text-primary-blue hover:underline">${u.name} &rarr;</a>
+                    ${IS_ADMIN_LOGGED_IN ? `<button onclick="window.handleDelete('utility', '${u.id}', '${u.name}')" class="text-red-600 text-xs">Xóa</button>` : ''}
+                </div>`).join('') : '<p class="italic text-sm text-gray-500">Chưa có tiện ích.</p>';
+             document.getElementById('loading-message').style.display = 'none';
+        };
+
+
+        const renderBansList = (list) => {
+            const div = document.getElementById('bans-list-container');
+            div.innerHTML = list.length ? list.map(b => `
+                <div class="bg-white p-5 rounded-xl card-shadow border border-club-info hover:bg-light-blue cursor-pointer flex flex-col justify-between" onclick="window.switchView('content-gallery', '${b.id}')">
+                    <div><h3 class="font-bold text-lg">${b.name}</h3><p class="text-sm italic">${b.description || ''}</p></div>
+                    ${IS_ADMIN_LOGGED_IN ? `<button onclick="event.stopPropagation(); window.handleDelete('ban', '${b.id}', '${b.name}')" class="text-red-600 text-xs self-end mt-2">Xóa</button>` : ''}
+                </div>`).join('') : '<p class="col-span-full text-center">Chưa có Ban nào.</p>';
+            document.getElementById('admin-add-ban-form').classList.toggle('hidden', !IS_ADMIN_LOGGED_IN);
+        };
+
+
+        const renderMembersList = (list) => {
+             const div = document.getElementById('members-list-container');
+             div.innerHTML = list.length ? list.map(m => `
+                <div class="bg-white p-4 rounded-xl card-shadow border border-member-blue text-center">
+                    <img src="${m.avatarUrl || 'https://placehold.co/100'}" class="w-20 h-20 rounded-full mx-auto mb-2 object-cover border-2 border-member-blue">
+                    <h3 class="font-bold">${m.name}</h3>
+                    <p class="text-sm text-member-blue">${m.role}</p>
+                    ${IS_ADMIN_LOGGED_IN ? `<button onclick="window.handleDelete('member', '${m.id}', '${m.name}')" class="text-red-600 text-xs mt-2 border border-red-200 px-2 rounded">Xóa</button>` : ''}
+                </div>`).join('') : '<p class="col-span-full text-center">Chưa có thành viên.</p>';
+             document.getElementById('admin-add-member-form').classList.toggle('hidden', !IS_ADMIN_LOGGED_IN);
+        };
+
+
+        const renderContentGallery = (banId, list) => {
+            const ban = BANS_LIST.find(b => b.id === banId);
+            document.getElementById('current-ban-name').textContent = `Thư viện: ${ban ? ban.name : ''}`;
+            const div = document.getElementById('content-gallery-container');
+            div.innerHTML = list.length ? list.map(i => `
+                <div class="bg-white rounded-xl overflow-hidden card-shadow gallery-item" onclick="window.showZoomModal('${i.imageUrl}', '${i.caption}', '')">
+                    <div class="aspect-video relative"><img src="${i.imageUrl}" class="w-full h-full object-cover"></div>
+                    <div class="p-2"><p class="text-sm truncate">${i.caption}</p>
+                    ${IS_ADMIN_LOGGED_IN ? `<button onclick="event.stopPropagation(); window.handleDelete('content', '${i.id}', 'ảnh', '${banId}')" class="text-red-600 text-xs mt-1">Xóa</button>` : ''}
+                    </div>
+                </div>`).join('') : '<p class="col-span-full text-center">Chưa có ảnh.</p>';
+            document.getElementById('admin-upload-content-form').classList.toggle('hidden', !IS_ADMIN_LOGGED_IN);
+        };
+       
+        // --- ADMIN & AUTH LOGIC ---
+        const updateUI = () => {
+            document.getElementById('admin-mode-indicator').classList.toggle('hidden', !IS_ADMIN_LOGGED_IN);
+            ['admin-add-form', 'admin-event-form-container', 'admin-quick-schedule-form', 'admin-signup-link-form-container'].forEach(id => {
+                 document.getElementById(id).classList.toggle('hidden', !IS_ADMIN_LOGGED_IN);
+            });
+            document.getElementById('auth-status').textContent = IS_ADMIN_LOGGED_IN ? 'Đăng xuất Admin' : 'Đăng nhập Admin';
+           
+            // Refresh views if needed
+            if(CURRENT_VIEW === 'ban-list') renderBansList(BANS_LIST);
+            if(CURRENT_VIEW === 'member-list') renderMembersList(MEMBERS_LIST);
+            if(CURRENT_VIEW === 'schedule-view') renderCalendar(CURRENT_YEAR, CURRENT_MONTH);
+        };
+
+
+        document.getElementById('auth-button').onclick = () => {
+            if(IS_ADMIN_LOGGED_IN) {
+                if(confirm('Đăng xuất Admin?')) {
+                    IS_ADMIN_LOGGED_IN = false;
+                    localStorage.removeItem('isAdminLoggedIn');
+                    updateUI();
+                }
+            } else {
+                document.getElementById('login-modal').classList.remove('hidden');
+            }
+        };
+
+
+        document.getElementById('login-form').onsubmit = (e) => {
+            e.preventDefault();
+            if(document.getElementById('username').value === ADMIN_USERNAME && document.getElementById('password').value === ADMIN_PASSWORD) {
+                IS_ADMIN_LOGGED_IN = true;
+                localStorage.setItem('isAdminLoggedIn', 'true');
+                document.getElementById('login-modal').classList.add('hidden');
+                updateUI();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        };
+       
+        document.getElementById('close-login-modal').onclick = () => document.getElementById('login-modal').classList.add('hidden');
+
+
+        // --- GLOBAL DELETE HANDLER ---
+        window.handleDelete = (type, id, name, parentId) => {
+            const modal = document.getElementById('confirm-modal');
+            const msg = document.getElementById('confirm-message');
+            const btn = document.getElementById('confirm-action-btn');
+           
+            msg.textContent = `Xóa "${name}"?`;
+            modal.classList.remove('hidden');
+           
+            // Clear old listener
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+           
+            newBtn.onclick = async () => {
+                modal.classList.add('hidden');
+                try {
+                    if(type === 'utility') await deleteDoc(doc(getUtilitiesCollection(), id));
+                    if(type === 'ban') await deleteDoc(doc(getBansCollection(), id));
+                    if(type === 'member') await deleteDoc(doc(getMembersCollection(), id));
+                    if(type === 'content') await deleteDoc(doc(getContentCollection(parentId), id));
+                    if(type === 'schedule') { await deleteDoc(doc(getScheduleCollection(), id)); hideScheduleModal(); }
+                } catch(e) { console.error(e); alert('Lỗi xóa!'); }
+            };
+        };
+        document.getElementById('confirm-cancel-btn').onclick = () => document.getElementById('confirm-modal').classList.add('hidden');
+        document.getElementById('delete-schedule-btn').onclick = () => window.handleDelete('schedule', document.getElementById('event-doc-id-schedule').value, 'Sự kiện này', null);
+
+
+
+
+        // --- FORM SUBMISSIONS (Compact) ---
+        const handleForm = (formId, action) => {
+            document.getElementById(formId).addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if(!IS_ADMIN_LOGGED_IN) return;
+                try { await action(); document.getElementById(formId).reset(); alert('Thành công!'); }
+                catch(err) { console.error(err); alert('Lỗi!'); }
+            });
+        };
+
+
+        handleForm('add-utility-form', () => addDoc(getUtilitiesCollection(), {
+            name: document.getElementById('utility-name').value,
+            url: document.getElementById('utility-url').value,
+            createdAt: Date.now()
+        }));
+
+
+        handleForm('add-ban-form', () => addDoc(getBansCollection(), {
+            name: document.getElementById('ban-name').value,
+            description: document.getElementById('ban-description').value,
+            createdAt: Date.now()
+        }));
+
+
+        handleForm('add-member-form', () => addDoc(getMembersCollection(), {
+            name: document.getElementById('member-name').value,
+            role: document.getElementById('member-role').value,
+            avatarUrl: document.getElementById('member-avatar-url').value,
+            contact: document.getElementById('member-contact').value,
+            createdAt: Date.now()
+        }));
+       
+        handleForm('manage-event-form', () => setDoc(getEventDoc(), {
+            name: document.getElementById('event-name').value,
+            time: document.getElementById('event-time').value,
+            link: document.getElementById('event-link').value,
+            imageUrl: document.getElementById('event-image-url').value,
+            updatedAt: Date.now()
+        }));
+       
+        handleForm('manage-signup-link-form', () => setDoc(getClubSettingsDoc(), {
+            link: document.getElementById('club-signup-link').value,
+            updatedAt: Date.now()
+        }, {merge: true}));
+       
+        handleForm('upload-content-form', () => addDoc(getContentCollection(CURRENT_BAN_ID), {
+            imageUrl: document.getElementById('content-image-url').value,
+            caption: document.getElementById('content-caption').value,
+            createdAt: Date.now()
+        }));
+       
+        handleForm('add-schedule-form', async () => {
+            const id = document.getElementById('event-doc-id-schedule').value;
+            const data = { name: document.getElementById('schedule-name').value, description: document.getElementById('schedule-description').value, date: SELECTED_SCHEDULE_DATE };
+            if(id) await setDoc(doc(getScheduleCollection(), id), {...data, updatedAt: Date.now()}, {merge:true});
+            else await addDoc(getScheduleCollection(), {...data, createdAt: Date.now()});
+            hideScheduleModal();
+        });
+
+
+
+
+        // --- INIT ---
+        document.getElementById('prev-month-btn').onclick = () => { CURRENT_MONTH--; if(CURRENT_MONTH<0){CURRENT_MONTH=11;CURRENT_YEAR--} renderCalendar(CURRENT_YEAR, CURRENT_MONTH); };
+        document.getElementById('next-month-btn').onclick = () => { CURRENT_MONTH++; if(CURRENT_MONTH>11){CURRENT_MONTH=0;CURRENT_YEAR++} renderCalendar(CURRENT_YEAR, CURRENT_MONTH); };
+
+
+        onAuthStateChanged(auth, (user) => {
+            // Listeners
+            onSnapshot(query(getUtilitiesCollection(), orderBy('createdAt', 'desc')), s => {
+                const l=[]; s.forEach(d=>l.push({id:d.id, ...d.data()})); renderUtilities(l);
+            });
+            onSnapshot(query(getBansCollection(), orderBy('createdAt', 'asc')), s => {
+                BANS_LIST=[]; s.forEach(d=>BANS_LIST.push({id:d.id, ...d.data()}));
+                if(CURRENT_VIEW==='ban-list') renderBansList(BANS_LIST);
+            });
+            onSnapshot(query(getMembersCollection(), orderBy('createdAt', 'asc')), s => {
+                MEMBERS_LIST=[]; s.forEach(d=>MEMBERS_LIST.push({id:d.id, ...d.data()}));
+                if(CURRENT_VIEW==='member-list') renderMembersList(MEMBERS_LIST);
+            });
+            onSnapshot(getScheduleCollection(), s => {
+                SCHEDULE_EVENTS=[]; s.forEach(d=>SCHEDULE_EVENTS.push({id:d.id, ...d.data()}));
+                if(CURRENT_VIEW==='schedule-view') renderCalendar(CURRENT_YEAR, CURRENT_MONTH);
+            });
+            // Banner & Signup Link
+            const updateBanner = (evt, link) => {
+                const banner = document.getElementById('event-banner-section');
+                const content = document.getElementById('event-content');
+                document.getElementById('signup-link-card').href = link?.link || '#';
+                document.getElementById('signup-link-text').textContent = link?.link ? 'Điền Form Ngay →' : 'Chưa có Link';
+                if(IS_ADMIN_LOGGED_IN) document.getElementById('club-signup-link').value = link?.link || '';
+
+
+                if(evt) {
+                    banner.style.backgroundImage = evt.imageUrl ? `linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)), url('${evt.imageUrl}')` : 'none';
+                    if(!evt.imageUrl) banner.classList.add('bg-dark-purple');
+                    content.innerHTML = `<h2 class="text-3xl md:text-4xl font-extrabold text-white mb-2">${evt.name}</h2><p class="text-white font-semibold">${evt.time}</p><a href="${evt.link}" target="_blank" class="mt-4 inline-block px-6 py-2 bg-white text-dark-purple rounded-full font-bold">Tham Gia</a>`;
+                    if(IS_ADMIN_LOGGED_IN) {
+                        document.getElementById('event-name').value=evt.name; document.getElementById('event-time').value=evt.time;
+                        document.getElementById('event-link').value=evt.link; document.getElementById('event-image-url').value=evt.imageUrl;
+                    }
+                } else {
+                    banner.style.backgroundImage='none'; banner.classList.add('bg-gray-400');
+                    content.innerHTML='<h2 class="text-white font-bold text-2xl">Chưa có sự kiện</h2>';
+                }
+            };
+           
+            // Nested Snapshot to get both pieces of data
+            onSnapshot(getClubSettingsDoc(), (linkSnap) => {
+                const linkData = linkSnap.exists() ? linkSnap.data() : null;
+                onSnapshot(getEventDoc(), (evtSnap) => {
+                    updateBanner(evtSnap.exists() ? evtSnap.data() : null, linkData);
+                });
+            });
+
+
+            updateUI();
+            if(CURRENT_VIEW==='dashboard') switchView('dashboard');
+        });
+
+
+        signInAnonymously(auth).catch(console.error);
+
+
+    </script>
+</body>
+</html>
+
